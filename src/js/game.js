@@ -1,5 +1,6 @@
 import Grid from "../classes/Grid.js";
 import Invader from "../classes/invader.js";
+import Particle from "../classes/Particle.js";
 import Player from "../classes/PlayerTemp.js";
 import Projectile from "../classes/Projectile.js";
 
@@ -15,6 +16,7 @@ const player = new Player(canvas.width, canvas.height);
 const grid = new Grid(3, 6);
 const PlayerProjectiles = [];
 const InvaderProjectiles = [];
+const particles = [];
 
 const drawProjectiles = () => {
   const projectiles = [...PlayerProjectiles, ...InvaderProjectiles];
@@ -22,6 +24,32 @@ const drawProjectiles = () => {
   projectiles.forEach((projectile) => {
     projectile.draw(ctx);
     projectile.update();
+  });
+};
+
+const createExplosion = (position, size, color) => {
+  for (let i = 0; i < size; i += 1) {
+    const particle = new Particle(
+      {
+        x: position.x,
+        y: position.y,
+      },
+      {
+        y: Math.random() - 0.5 * 1.5,
+        x: Math.random() - 0.5 * 1.5,
+      },
+      2,
+      color,
+    );
+
+    particles.push(particle);
+  }
+};
+
+const drawParticles = () => {
+  particles.forEach((particle) => {
+    particle.draw(ctx);
+    particle.update();
   });
 };
 
@@ -33,7 +61,7 @@ const clearProjecttiles = () => {
   });
 };
 
-const invader = new Invader({ x: 150, y: 100 }, 5);
+const invader = new Invader({ x: 150, y: 100 }, 10);
 
 const keys = {
   left: false,
@@ -48,6 +76,24 @@ const checkShootInvaders = () => {
   grid.invaders.forEach((invader, invaderIndex, projectileIndex) => {
     PlayerProjectiles.some((projectile) => {
       if (invader.hit(projectile)) {
+        createExplosion(
+          {
+            x: invader.position.x + invader.width / 2,
+            y: invader.position.y + invader.width / 2,
+          },
+          2,
+          "#941CFF",
+        );
+
+        createExplosion(
+          {
+            x: invader.position.x + invader.width / 2,
+            y: invader.position.y + invader.width / 2,
+          },
+          2,
+          "#220033",
+        );
+
         grid.invaders.splice(invaderIndex, 1);
         PlayerProjectiles.splice(projectileIndex, 1);
       }
@@ -55,12 +101,49 @@ const checkShootInvaders = () => {
   });
 };
 
+const clearParticles = () => {
+  particles.forEach((particle, i) => {
+    if (particle.opacity <= 0) {
+      particles.splice(i, 1);
+    }
+  });
+};
+
+const checkShootPlayer = () => {
+  InvaderProjectiles.some((projectile, i) => {
+    if (player.hit(projectile)) {
+      InvaderProjectiles.splice(i, 1);
+      createExplosion(
+        {
+          x: player.position.x + player.width / 1.5,
+          y: player.position.y + player.width / 1.5,
+        },
+        10,
+        "#8B0000",
+      );
+
+      createExplosion(
+        {
+          x: player.position.x + player.width / 1.5,
+          y: player.position.y + player.width / 1.5,
+        },
+        10,
+        "#4A1505dd",
+      );
+    }
+  });
+};
+
 const gameLoop = () => {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
+  drawParticles();
   drawProjectiles();
   clearProjecttiles();
+  clearParticles();
+  console.log(particles);
 
+  checkShootPlayer();
   checkShootInvaders();
 
   grid.draw(ctx);
@@ -119,12 +202,12 @@ window.addEventListener("keyup", (event) => {
   }
 });
 
-// setInterval(() => {
-//   const invader = grid.getRandomInvader();
+setInterval(() => {
+  const invader = grid.getRandomInvader();
 
-//   if (invader) {
-//     invader.shoot(InvaderProjectiles);
-//   }
-// }, 1000);
+  if (invader) {
+    invader.shoot(InvaderProjectiles);
+  }
+}, 1000);
 
 gameLoop();
