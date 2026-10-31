@@ -1,8 +1,10 @@
 import Grid from "../classes/Grid.js";
 import Invader from "../classes/invader.js";
+import Obstacle from "../classes/Obstacle.js";
 import Particle from "../classes/Particle.js";
 import Player from "../classes/PlayerTemp.js";
 import Projectile from "../classes/Projectile.js";
+import { GameState } from "../utils/constants.js";
 
 const canvas = document.querySelector("canvas");
 const ctx = canvas.getContext("2d");
@@ -12,11 +14,30 @@ canvas.height = innerHeight;
 
 ctx.imageSmoothingEnabled = false;
 
+let currentState = GameState.PLAYING;
+
 const player = new Player(canvas.width, canvas.height);
 const grid = new Grid(3, 6);
+
 const PlayerProjectiles = [];
 const InvaderProjectiles = [];
 const particles = [];
+const obstacles = [];
+
+const initObstacle = () => {
+  const x = canvas.width / 2 - 50;
+  const y = canvas.height - 250;
+  const offset = canvas.width * 0.15;
+  const color = "#aaaaaa";
+
+  const obstacle1 = new Obstacle({ x: x - offset, y }, 100, 20, color);
+  const obstacle2 = new Obstacle({ x: x + offset, y: y }, 100, 20, color);
+
+  obstacles.push(obstacle1);
+  obstacles.push(obstacle2);
+};
+
+initObstacle();
 
 const drawProjectiles = () => {
   const projectiles = [...PlayerProjectiles, ...InvaderProjectiles];
@@ -72,6 +93,10 @@ const keys = {
   },
 };
 
+const drawObstacles = () => {
+  obstacles.forEach((obstacle) => obstacle.draw(ctx));
+};
+
 const checkShootInvaders = () => {
   grid.invaders.forEach((invader, invaderIndex, projectileIndex) => {
     PlayerProjectiles.some((projectile) => {
@@ -81,7 +106,7 @@ const checkShootInvaders = () => {
             x: invader.position.x + invader.width / 2,
             y: invader.position.y + invader.width / 2,
           },
-          2,
+          5,
           "#941CFF",
         );
 
@@ -90,7 +115,7 @@ const checkShootInvaders = () => {
             x: invader.position.x + invader.width / 2,
             y: invader.position.y + invader.width / 2,
           },
-          2,
+          5,
           "#220033",
         );
 
@@ -113,72 +138,115 @@ const checkShootPlayer = () => {
   InvaderProjectiles.some((projectile, i) => {
     if (player.hit(projectile)) {
       InvaderProjectiles.splice(i, 1);
-      createExplosion(
-        {
-          x: player.position.x + player.width / 1.5,
-          y: player.position.y + player.width / 1.5,
-        },
-        10,
-        "#8B0000",
-      );
-
-      createExplosion(
-        {
-          x: player.position.x + player.width / 1.5,
-          y: player.position.y + player.width / 1.5,
-        },
-        10,
-        "#4A1505dd",
-      );
+      gameOver();
     }
   });
+};
+
+const checkShootObstacles = () => {
+  obstacles.forEach((obstacles) => {
+    PlayerProjectiles.some((projectile, i) => {
+      if (obstacles.hit(projectile)) {
+        PlayerProjectiles.splice(i, 1);
+      }
+    });
+  });
+};
+
+const spawnGrid = () => {
+  if (grid.invaders.length === 0) {
+    grid.rows = Math.round(Math.random() * 9 + 1);
+    grid.cols = Math.round(Math.random() * 9 + 1);
+    grid.restart();
+  }
+};
+
+const gameOver = () => {
+  createExplosion(
+    {
+      x: player.position.x + player.width / 1.5,
+      y: player.position.y + player.width / 1.5,
+    },
+    10,
+    "#e83b3b",
+  );
+
+  createExplosion(
+    {
+      x: player.position.x + player.width / 1.5,
+      y: player.position.y + player.width / 1.5,
+    },
+    10,
+    "#f79617",
+  );
+
+  currentState = GameState.GAME_OVER;
+  player.alive = false;
 };
 
 const gameLoop = () => {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-  drawParticles();
-  drawProjectiles();
-  clearProjecttiles();
-  clearParticles();
-  console.log(particles);
+  if (currentState == GameState.PLAYING) {
+    spawnGrid();
 
-  checkShootPlayer();
-  checkShootInvaders();
+    drawParticles();
+    drawProjectiles();
+    drawObstacles();
 
-  grid.draw(ctx);
-  // grid.update();
+    clearProjecttiles();
+    clearParticles();
 
-  ctx.save();
+    checkShootPlayer();
+    checkShootInvaders();
+    checkShootObstacles();
 
-  ctx.translate(
-    player.position.x + player.width / 2,
-    player.position.y + player.height / 2,
-  );
+    grid.draw(ctx);
+    // grid.update(player.alive);
 
-  if (keys.shoot.pressed && keys.shoot.released) {
-    player.shoot(PlayerProjectiles);
-    keys.shoot.released = false;
+    ctx.save();
+
+    ctx.translate(
+      player.position.x + player.width / 2,
+      player.position.y + player.height / 2,
+    );
+
+    if (keys.shoot.pressed && keys.shoot.released) {
+      player.shoot(PlayerProjectiles);
+      keys.shoot.released = false;
+    }
+
+    if (keys.left && player.position.x >= 0) {
+      player.moveLeft();
+      ctx.rotate(-0.15);
+    }
+
+    if (keys.right && player.position.x <= canvas.width - player.width) {
+      player.moveRight();
+      ctx.rotate(+0.15);
+    }
+
+    ctx.translate(
+      -player.position.x - player.width / 2,
+      -player.position.y - player.height / 2,
+    );
+
+    player.draw(ctx);
+
+    ctx.restore();
   }
 
-  if (keys.left && player.position.x >= 0) {
-    player.moveLeft();
-    ctx.rotate(-0.15);
+  if (currentState == GameState.GAME_OVER) {
+    drawParticles();
+    drawProjectiles();
+
+    clearProjecttiles();
+    clearParticles();
+
+    grid.draw(ctx);
+    grid.update();
+    grid.update(player.alive);
   }
-
-  if (keys.right && player.position.x <= canvas.width - player.width) {
-    player.moveRight();
-    ctx.rotate(+0.15);
-  }
-
-  ctx.translate(
-    -player.position.x - player.width / 2,
-    -player.position.y - player.height / 2,
-  );
-
-  player.draw(ctx);
-
-  ctx.restore();
 
   window.requestAnimationFrame(gameLoop);
 };
@@ -202,12 +270,12 @@ window.addEventListener("keyup", (event) => {
   }
 });
 
-setInterval(() => {
-  const invader = grid.getRandomInvader();
+// setInterval(() => {
+//   const invader = grid.getRandomInvader();
 
-  if (invader) {
-    invader.shoot(InvaderProjectiles);
-  }
-}, 1000);
+//   if (invader) {
+//     invader.shoot(InvaderProjectiles);
+//   }
+// }, 1000);
 
 gameLoop();
