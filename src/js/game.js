@@ -1,9 +1,12 @@
 import Grid from "../classes/Grid.js";
-import Invader from "../classes/invader.js";
 import Obstacle from "../classes/Obstacle.js";
 import Particle from "../classes/Particle.js";
 import Player from "../classes/PlayerTemp.js";
+import SoundEffects from "../classes/SoundEffects.js";
+import Star from "../classes/Star.js";
 import { GameState } from "../utils/constants.js";
+
+const soundEffects = new SoundEffects();
 
 const startScreen = document.querySelector(".start-screen");
 const gameOverScreen = document.querySelector(".game-over");
@@ -45,6 +48,10 @@ const PlayerProjectiles = [];
 const InvaderProjectiles = [];
 const particles = [];
 const obstacles = [];
+const stars = Array.from(
+  { length: 90 },
+  () => new Star(canvas.width, canvas.height),
+);
 
 const initObstacle = () => {
   const x = canvas.width / 2 - 50;
@@ -60,6 +67,13 @@ const initObstacle = () => {
 };
 
 initObstacle();
+
+const drawStars = (scroll = 0) => {
+  stars.forEach((star) => {
+    star.draw(ctx);
+    star.update(scroll);
+  });
+};
 
 const drawProjectiles = () => {
   const projectiles = [...PlayerProjectiles, ...InvaderProjectiles];
@@ -86,8 +100,8 @@ const createExplosion = (position, size, color) => {
         y: position.y,
       },
       {
-        y: Math.random() - 0.5 * 1.5,
-        x: Math.random() - 0.5 * 1.5,
+        y: (Math.random() - 0.5) * 1.5,
+        x: (Math.random() - 0.5) * 1.5,
       },
       2,
       color,
@@ -104,15 +118,19 @@ const drawParticles = () => {
   });
 };
 
-const clearProjecttiles = () => {
-  PlayerProjectiles.forEach((projectile, index) => {
-    if (projectile.position.y <= 0) {
-      PlayerProjectiles.splice(index, 1);
+const clearProjectiles = () => {
+  for (let i = PlayerProjectiles.length - 1; i >= 0; i -= 1) {
+    if (PlayerProjectiles[i].position.y <= 0) {
+      PlayerProjectiles.splice(i, 1);
     }
-  });
-};
+  }
 
-const invader = new Invader({ x: 150, y: 100 }, 10);
+  for (let i = InvaderProjectiles.length - 1; i >= 0; i -= 1) {
+    if (InvaderProjectiles[i].position.y >= canvas.height) {
+      InvaderProjectiles.splice(i, 1);
+    }
+  }
+};
 
 const keys = {
   left: false,
@@ -128,71 +146,74 @@ const drawObstacles = () => {
 };
 
 const clearParticles = () => {
-  particles.forEach((particle, i) => {
-    if (particle.opacity <= 0) {
+  for (let i = particles.length - 1; i >= 0; i -= 1) {
+    if (particles[i].opacity <= 0) {
       particles.splice(i, 1);
     }
-  });
+  }
 };
 
 const checkShootInvaders = () => {
-  grid.invaders.forEach((invader, invaderIndex, projectileIndex) => {
-    PlayerProjectiles.some((projectile) => {
-      if (invader.hit(projectile)) {
-        createExplosion(
-          {
-            x: invader.position.x + invader.width / 2,
-            y: invader.position.y + invader.width / 2,
-          },
-          5,
-          "#941CFF",
-        );
+  for (let i = grid.invaders.length - 1; i >= 0; i -= 1) {
+    const invader = grid.invaders[i];
+    const projectileIndex = PlayerProjectiles.findIndex((projectile) =>
+      invader.hit(projectile),
+    );
 
-        incrementScore(10);
+    if (projectileIndex !== -1) {
+      soundEffects.playHitSound();
 
-        createExplosion(
-          {
-            x: invader.position.x + invader.width / 2,
-            y: invader.position.y + invader.width / 2,
-          },
-          5,
-          "#220033",
-        );
+      const center = {
+        x: invader.position.x + invader.width / 2,
+        y: invader.position.y + invader.width / 2,
+      };
 
-        grid.invaders.splice(invaderIndex, 1);
-        PlayerProjectiles.splice(projectileIndex, 1);
-      }
-    });
-  });
+      createExplosion({ ...center }, 5, "#941CFF");
+      createExplosion({ ...center }, 5, "#220033");
+
+      incrementScore(10);
+
+      grid.invaders.splice(i, 1);
+      PlayerProjectiles.splice(projectileIndex, 1);
+    }
+  }
 };
 
 const checkShootPlayer = () => {
-  InvaderProjectiles.some((projectile, i) => {
-    if (player.hit(projectile)) {
-      InvaderProjectiles.splice(i, 1);
-      gameOver();
-    }
-  });
+  const index = InvaderProjectiles.findIndex((projectile) =>
+    player.hit(projectile),
+  );
+
+  if (index !== -1) {
+    soundEffects.playExplosionSound();
+    InvaderProjectiles.splice(index, 1);
+    gameOver();
+  }
 };
 
 const checkShootObstacles = () => {
-  obstacles.forEach((obstacles) => {
-    PlayerProjectiles.some((projectile, i) => {
-      if (obstacles.hit(projectile)) {
-        PlayerProjectiles.splice(i, 1);
-      }
-    });
+  obstacles.forEach((obstacle) => {
+    const playerIndex = PlayerProjectiles.findIndex((projectile) =>
+      obstacle.hit(projectile),
+    );
 
-    InvaderProjectiles.some((projectile, i) => {
-      if (obstacles.hit(projectile)) {
-        InvaderProjectiles.splice(i, 1);
-      }
-    });
+    if (playerIndex !== -1) {
+      PlayerProjectiles.splice(playerIndex, 1);
+    }
+
+    const invaderIndex = InvaderProjectiles.findIndex((projectile) =>
+      obstacle.hit(projectile),
+    );
+
+    if (invaderIndex !== -1) {
+      InvaderProjectiles.splice(invaderIndex, 1);
+    }
   });
 };
 
 const spawnGrid = () => {
   if (grid.invaders.length === 0) {
+    soundEffects.playNextLevelSound();
     grid.rows = Math.round(Math.random() * 9 + 1);
     grid.cols = Math.round(Math.random() * 9 + 1);
     grid.restart();
@@ -228,6 +249,12 @@ const gameOver = () => {
 const gameLoop = () => {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
+  drawStars(currentState == GameState.PLAYING ? 0.2 : 0);
+
+  if (currentState == GameState.START) {
+    drawStars();
+  }
+
   if (currentState == GameState.PLAYING) {
     showGameData();
     spawnGrid();
@@ -236,7 +263,7 @@ const gameLoop = () => {
     drawProjectiles();
     drawObstacles();
 
-    clearProjecttiles();
+    clearProjectiles();
     clearParticles();
 
     checkShootPlayer();
@@ -254,6 +281,7 @@ const gameLoop = () => {
     );
 
     if (keys.shoot.pressed && keys.shoot.released) {
+      soundEffects.playShootSound();
       player.shoot(PlayerProjectiles);
       keys.shoot.released = false;
     }
@@ -284,11 +312,10 @@ const gameLoop = () => {
     drawParticles();
     drawProjectiles();
 
-    clearProjecttiles();
+    clearProjectiles();
     clearParticles();
 
     grid.draw(ctx);
-    grid.update();
     grid.update(player.alive);
   }
 
@@ -332,13 +359,17 @@ buttonRestart.addEventListener("click", () => {
   currentState = GameState.PLAYING;
   player.alive = true;
 
-  grid.invaders.length = 0;
-  grid.invaderVelocity = 1;
+  grid.rows = 3;
+  grid.cols = 6;
+  grid.invaderVelocity = 0.5;
+  grid.restart();
 
   InvaderProjectiles.length = 0;
+  PlayerProjectiles.length = 0;
+  particles.length = 0;
 
   gameData.score = 0;
-  gameData.level = 0;
+  gameData.level = 1;
 
   gameOverScreen.remove();
 });

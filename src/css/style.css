@@ -1,13 +1,22 @@
-@import url("https://fonts.googleapis.com/css?family=Press+Start+2P&display=swap");
+@import url('https://fonts.googleapis.com/css2?family=Silkscreen:wght@400;700&display=swap');
 
 * {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
-  font-family: "Press Start 2P", sans-serif;
+  font-family: "Silkscreen", sans-serif;
+}
+
+html,
+body {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background-color: #121212;
 }
 
 canvas {
+  display: block;
   background-color: #121212;
 }
 
@@ -25,18 +34,24 @@ canvas {
 }
 
 .screen h1 {
-  font: 3rem;
+  font-size: 3rem;
+  font-weight: 900;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
 }
 
 .button-play,
 .button-restart {
   border: none;
-  padding: 12px 20px;
+  padding: 12px 28px;
   border-radius: 5px;
-  background-color: #ddd;
+  background-color: #ecebeb;
   display: block;
   margin: 20px auto 0;
-  font-size: 1rem;
+  font-size: 1.6rem;
+  font-weight: 700;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
   cursor: pointer;
 }
 
@@ -47,11 +62,10 @@ canvas {
 
 .game-over {
   scale: 0;
-
   animation: zoom 2s ease-in-out forwards;
 }
 
-.score-ui{
+.score-ui {
   width: 100%;
   position: fixed;
   top: 0;
@@ -60,7 +74,9 @@ canvas {
   text-align: center;
   padding: 25px;
   text-transform: uppercase;
-  font-size: 0.8rem;
+  font-size: 0.9rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
   display: none;
 }
 

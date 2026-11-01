@@ -9,11 +9,11 @@ class SoundEffects {
     ];
 
     this.hitSounds = [
-      new Audio("src/assets/audios/shoot.mp3"),
-      new Audio("src/assets/audios/shoot.mp3"),
-      new Audio("src/assets/audios/shoot.mp3"),
-      new Audio("src/assets/audios/shoot.mp3"),
-      new Audio("src/assets/audios/shoot.mp3"),
+      new Audio("src/assets/audios/hit.mp3"),
+      new Audio("src/assets/audios/hit.mp3"),
+      new Audio("src/assets/audios/hit.mp3"),
+      new Audio("src/assets/audios/hit.mp3"),
+      new Audio("src/assets/audios/hit.mp3"),
     ];
 
     this.explosionSound = new Audio("src/assets/audios/explosion.mp3");
@@ -28,14 +28,22 @@ class SoundEffects {
   playExplosionSound() {
     this.explosionSound.play();
   }
-  nextLevelSound() {
-    this.explosionSound.play();
+
+  playNextLevelSound() {
+    this.nextLevelSound.play();
   }
 
   playShootSound() {
-    this.shootSounds[this.currentHitSound].currentTime = 0;
-    this.shootSounds[this.currentHitSound].play();
-    this.currentShootSound += 1;
+    this.shootSounds[this.currentShootSound].currentTime = 0;
+    this.shootSounds[this.currentShootSound].play();
+    this.currentShootSound =
+      (this.currentShootSound + 1) % this.shootSounds.length;
+  }
+
+  playHitSound() {
+    this.hitSounds[this.currentHitSound].currentTime = 0;
+    this.hitSounds[this.currentHitSound].play();
+    this.currentHitSound = (this.currentHitSound + 1) % this.hitSounds.length;
   }
 
   adjustVolume() {
