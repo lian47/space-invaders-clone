@@ -1,5 +1,10 @@
 # Space Invaders Clone
 
+![Space Invaders Gameplay](src/assets/gameplay.gif)
+
+## Jogar Online
+- [Clique aqui para jogar no navegador](https://lian47.github.io/space-invaders-clone/)
+  
 Uma recriação do clássico jogo Space Invaders desenvolvida em HTML5 Canvas e JavaScript.
 
 ## Tecnologias
