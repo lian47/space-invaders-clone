@@ -1,6 +1,6 @@
 # Space Invaders Clone
 
-![Space Invaders Gameplay](src/assets/gameplay.png)
+![Space Invaders Gameplay](src/assets/gameplay.gif)
 
 ## Jogar Online
 - [Clique aqui para jogar no navegador](https://lian47.github.io/space-invaders-clone/)
